@@ -31,5 +31,11 @@ Você pode rodar o servidor com o seguinte comando:
 python app.py || flask run
 ```
 
+## Documentacao 
+A documentacao desse projeto pode ser acessada assim que o mesmo estiver no ar. Lembre-se de colocar o /apidocs ao final da URL
+```bash
+http://localhost:5000/apidocs
+```
+
 ### Licença
 Este projeto está licenciado sob a licença MIT. Consulte o arquivo LICENSE para obter mais informações
