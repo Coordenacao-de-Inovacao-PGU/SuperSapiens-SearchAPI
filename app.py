@@ -5,8 +5,13 @@ from services.settings import APP_VERSION, JWT_SECRET_KEY, SECRET_KEY
 from services.SuperSapiens.super_sapiens import SuperSapiensService
 import re
 
+# Docs imports
 from flasgger import Swagger, swag_from
 from documentation.login_docs import LOGIN_ROUTE
+from documentation.search_user_docs import SEARCH_USER_BY_NAME_ROUTE
+from documentation.search_unity_docs import SEARCH_UNITY_ROUTE
+from documentation.search_sector_docs import SEARCH_SECTOR_ROUTE
+from documentation.search_document_type_docs import SEARCH_DOCUMENT_TYPE_ROUTE
 from documentation.search_all_docs import SEARCH_ALL_ROUTE
 from documentation.headers_config import SWAGGER_TEMPLATE
 
@@ -15,7 +20,6 @@ app = Flask(__name__)
 
 # Config das Docs
 Swagger(app, template=SWAGGER_TEMPLATE)
-
 
 # Config JWT
 app.config['SECRET_KEY'] = SECRET_KEY
@@ -29,6 +33,7 @@ CORS(app, resources={r"/*": {"origins": "*", "send_wildcard": "True"}})
 super_sapiens_service = SuperSapiensService()
 
 jwt = JWTManager(app)
+
 
 def is_valid_date_format(date_str):
     # Expressão regular para verificar o formato da data
@@ -46,6 +51,7 @@ def home():
     })
 
 
+# Rota de autenticacao
 @app.route('/login', methods=['POST'])
 @swag_from(LOGIN_ROUTE)
 def sapiens_login_post():
@@ -93,6 +99,81 @@ def sapiens_login_post():
     })
 
 
+# Rotas para filtros
+@app.route('/search_document_type', methods=['GET'])
+@jwt_required()
+@swag_from(SEARCH_DOCUMENT_TYPE_ROUTE)
+def search_document_type_route():
+    '''Define a rota de pesquisa de tipos documentos'''
+
+    try:
+        query = request.args.get('q')
+        if query:
+            result = super_sapiens_service.search_document_type(query)
+            return jsonify(result), 200
+        else:
+            return jsonify({"success": False, "message": f"Query nao encontrada!"}), 500
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Erro ao buscar Pasta: {e}"}), 500
+
+
+@app.route('/search_user_by_name', methods=['GET'])
+@jwt_required()
+@swag_from(SEARCH_USER_BY_NAME_ROUTE)
+def search_user_by_name_route():
+    '''Define a rota de pesquisa de usuario pelo nome'''
+
+    try:
+        query = request.args.get('q')
+        if query:
+            result = super_sapiens_service.search_user_by_name(query)
+            return jsonify(result), 200
+        else:
+            return jsonify({"success": False, "message": f"Query nao encontrada!"}), 500
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Erro ao buscar Pasta: {e}"}), 500
+
+
+@app.route('/search_unity', methods=['GET'])
+@jwt_required()
+@swag_from(SEARCH_UNITY_ROUTE)
+def search_unity_route():
+    '''Define a rota de pesquisa de unidades'''
+
+    try:
+        query = request.args.get('q')
+        if query:
+            result = super_sapiens_service.search_unity(query)
+            return jsonify(result), 200
+        else:
+            return jsonify({"success": False, "message": f"Query nao encontrada!"}), 500
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Erro ao buscar Pasta: {e}"}), 500
+
+
+@app.route('/search_sector', methods=['GET'])
+@jwt_required()
+@swag_from(SEARCH_SECTOR_ROUTE)
+def search_sector_route():
+    '''Define a rota de pesquisa de setores'''
+
+    try:
+        query = request.args.get('q')
+        unity_id = request.args.get('unity_id')
+        if query and unity_id:
+            result = super_sapiens_service.search_sector(unity_id, query)
+            return jsonify(result), 200
+        else:
+            return jsonify({"success": False, "message": f"Query ou ID da unidade nao encontrada!"}), 500
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Erro ao buscar Pasta: {e}"}), 500
+
+
+# Rota de pesquisa de documentos
 @app.route('/search_all', methods=['POST'])
 @jwt_required()
 @swag_from(SEARCH_ALL_ROUTE)
@@ -102,6 +183,7 @@ def search_all():
     try:
         data = request.get_json()
 
+        year = data.get("year")
         content = data.get("content")
         extension = data.get("extension")
         unity = data.get("unity")
@@ -117,11 +199,8 @@ def search_all():
         if created_on is not None and not is_valid_date_format(created_on):
             return jsonify({"success": False, "message": "A data 'created_on' não está no formato correto."}), 400
 
-        # TESTEEE --->>
-        user_sapiens_dataTEST = get_jwt_identity()
-        print('TEST user SapiensData --', user_sapiens_dataTEST)
-
-        result = super_sapiens_service.search_all_data(content, extension, unity, document_type, created_at, created_on, created_by, sector)
+        result = super_sapiens_service.search_all_data(content, year, extension, unity, document_type, created_at, created_on,
+                                                       created_by, sector)
 
         return jsonify(result), 200
 

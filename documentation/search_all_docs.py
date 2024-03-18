@@ -21,6 +21,10 @@ SEARCH_ALL_ROUTE = {
                         "type": "string",
                         "description": "Conteúdo para pesquisa"
                     },
+                    "year": {
+                        "type": "string",
+                        "description": "Ano de pesquisa PARAMETRO OBRIGATORIO"
+                    },
                     "extension": {
                         "type": "string",
                         "description": "Extensão do documento"

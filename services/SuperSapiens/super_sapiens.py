@@ -8,7 +8,8 @@ def validate_string(query):
     if query is not None:
         str_query = str(query)
         return str_query
-    return None
+    return ""
+
 
 class SuperSapiensService():
     def __init__(self, r_session=None) -> None:
@@ -26,8 +27,7 @@ class SuperSapiensService():
 
         self.r_session.headers.update({'Authorization': f'Bearer {self.token}'})
 
-
-        #variaveis de caixa de selecao
+        # variaveis de caixa de selecao
         self.unity = None
         self.user_id_searched = None
         self.document_id = None
@@ -54,7 +54,7 @@ class SuperSapiensService():
             "sucesso": True if (Retorno is not None) else False,
             "dados": Retorno,
             "mensagem": mensagem
-            }
+        }
 
     def post(self, resource, body, **kwargs):
         jbody = body if isinstance(body, (dict, list)) else None
@@ -90,12 +90,13 @@ class SuperSapiensService():
 
         kwargs.update(headers=headers, params=params)
         return kwargs
+
     def __refresh_token(self):
-        headers={'Authorization': f'Bearer {self.token}'}
-        resp = self.r_session.get(self.url('auth/refresh_token'),headers=headers)
-        if resp.status_code==200:
+        headers = {'Authorization': f'Bearer {self.token}'}
+        resp = self.r_session.get(self.url('auth/refresh_token'), headers=headers)
+        if resp.status_code == 200:
             body = resp.json()
-            self.token = body.get('token','')
+            self.token = body.get('token', '')
             self.expiration = datetime.fromtimestamp(body['exp'])
 
     def __check_expiration(self):
@@ -127,7 +128,7 @@ class SuperSapiensService():
             raise "Token inválido!"
         payload = parts[1]
         dados = json.loads(base64.b64decode(payload.encode('utf-8') + b'==').decode('utf-8'))
-        return datetime.fromtimestamp(dados.get('exp',0))
+        return datetime.fromtimestamp(dados.get('exp', 0))
 
     def login(self, username: str, password: str) -> dict:
         retorno = ''
@@ -164,16 +165,16 @@ class SuperSapiensService():
             }
 
     def search_document_type(self, query):
-        data_id = None
+        data = None
         url = "/v1/administrativo/tipo_documento"
 
         querystring = {"where":
                            "{\"andX\":"
-                           "[{\"nome\":\"like:%"+str(query)+"%\"}]}",
-                           "limit": "10",
-                           "offset": "0",
-                           "order": "{}",
-                           "populate": "[]", "context": "{}"}
+                           "[{\"nome\":\"like:%" + str(query) + "%\"}]}",
+                       "limit": "10",
+                       "offset": "0",
+                       "order": "{}",
+                       "populate": "[]", "context": "{}"}
 
         payload = ""
 
@@ -184,32 +185,31 @@ class SuperSapiensService():
                 params=querystring
             )
             data = json.loads(req.text)
-            data_id = data["entities"][0]['id']
 
             # Atribuindo valor que sera usado na busca
-            self.document_id = data_id
+            self.document_id = data["entities"][0]['id']
 
         except Exception:
             print("Erro ao buscar Pasta")
             print('PAYLOAD: ', payload)
 
         return {
-            "sucesso": True if (data_id is not None) else False,
-            "documento_id": data_id,
+            "sucesso": True if (data is not None) else False,
+            "data": data,
         }
 
     def search_user_by_name(self, query):
-        data_id = None
+        data = None
         url = "/v1/administrativo/usuario"
 
         querystring = {"where":
                            "{\"andX\":"
-                           "[{\"nome\":\"like:%"+str(query)+"%\"}]}",
-                           "limit": "10",
-                           "offset": "0",
-                           "order": "{}",
-                           "populate": "[\"populateAll\",\"colaborador\",\"colaborador.cargo\",\"colaborador.modalidadeColaborador\"]",
-                           "context": "{}"}
+                           "[{\"nome\":\"like:%" + str(query) + "%\"}]}",
+                       "limit": "10",
+                       "offset": "0",
+                       "order": "{}",
+                       "populate": "[\"populateAll\",\"colaborador\",\"colaborador.cargo\",\"colaborador.modalidadeColaborador\"]",
+                       "context": "{}"}
 
         payload = ""
 
@@ -220,33 +220,30 @@ class SuperSapiensService():
                 params=querystring
             )
             data = json.loads(req.text)
-            data_id = data["entities"][0]['id']
 
-            #Atribuindo valor que sera usado na busca
-            self.user_id_searched = data_id
+            # Atribuindo valor que sera usado na busca
+            self.user_id_searched = data["entities"][0]['id']
 
         except Exception:
             print("Erro ao buscar Pasta")
             print('PAYLOAD: ', payload)
 
         return {
-            "sucesso": True if (data_id is not None) else False,
-            "user_id": data_id,
+            "sucesso": True if (data is not None) else False,
+            "data": data,
         }
 
     def search_unity(self, query):
-        data_id = None
+        data = None
         url = "/v1/administrativo/setor"
-
         querystring = {
             "where":
                 "{\"parent\":\"isNull\","
                 "\"orX\":[{\"andX\":"
-                "[{\"nome\":\"like:%"+str(query)+"%\"}]},"
-                "{\"andX\":"
-                "[{\"sigla\":\"like:%"+str(query)+"%\"}]}]}",
+                "[{\"nome\":\"like:%" + str(query) + "%\"}]},"
+                                                     "{\"andX\":"
+                                                     "[{\"sigla\":\"like:%" + str(query) + "%\"}]}]}",
             "limit": "10", "offset": "0", "order": "{}", "populate": "[]", "context": "{}"}
-
         payload = ""
 
         try:
@@ -256,31 +253,31 @@ class SuperSapiensService():
                 params=querystring
             )
             data = json.loads(req.text)
-            data_id = data["entities"][0]['id']
 
             # Atribuindo valor que sera usado na busca
-            self.unity = data_id
+            self.unity = data["entities"][0]['id']
 
         except Exception:
             print("Erro ao buscar Pasta")
             print('PAYLOAD: ', payload)
 
         return {
-            "sucesso": True if (data_id is not None) else False,
-            "unity_id": data_id,
+            "sucesso": True if (data is not None) else False,
+            "data": data,
         }
 
-    def search_sector(self, query):
-        data_id = None
+    def search_sector(self, unity_id, query):
+        data = None
         url = "/v1/administrativo/setor"
 
         querystring = {
             "where":
                 "{\"parent\":\"isNotNull\","
-                "\"unidade.id\":\"eq:"+str(self.unity)+"\","
-                "\"orX\":[{\"andX\":"
-                "[{\"nome\":\"like:%"+str(query)+"%\"}]},"
-                "{\"andX\":[{\"sigla\":\"like:%"+str(query)+"%\"}]}]}",
+                "\"unidade.id\":\"eq:" + str(unity_id) + "\","
+                                                         "\"orX\":[{\"andX\":"
+                                                         "[{\"nome\":\"like:%" + str(query) + "%\"}]},"
+                                                                                              "{\"andX\":[{\"sigla\":\"like:%" + str(
+                    query) + "%\"}]}]}",
             "limit": "10", "offset": "0", "order": "{}", "populate": "[\"unidade\",\"parent\"]", "context": "{}"}
 
         payload = ""
@@ -292,21 +289,21 @@ class SuperSapiensService():
                 params=querystring
             )
             data = json.loads(req.text)
-            data_id = data["entities"][0]['id']
 
             # Atribuindo valor que sera usado na busca
-            self.sector_id = data_id
+            self.sector_id = data["entities"][0]['id']
 
         except Exception:
             print("Erro ao buscar Pasta")
             print('PAYLOAD: ', payload)
 
         return {
-            "sucesso": True if (data_id is not None) else False,
-            "sector_id": data_id,
+            "sucesso": True if (data is not None) else False,
+            "data": data,
         }
 
-    def search_all_data(self, content, extension, unity,  document_type,  created_at, created_on, created_by, sector):
+    def search_all_data(self, content, year, extension, unity, document_type, created_at, created_on, created_by,
+                        sector):
         data = None
         url = "/v1/administrativo/componente_digital/search"
 
@@ -314,62 +311,81 @@ class SuperSapiensService():
             self.search_document_type(document_type)
         if created_by:
             self.search_user_by_name(created_by)
+
+        # NOTE: Para pesquisar o setor e necessaria a Unidade antes #
         if unity:
             self.search_unity(unity)
+            unity_id = self.unity
             if sector:
-                self.search_sector(sector)
+                self.search_sector(unity_id, sector)
 
-        print("Tipo de content:", type(content))
-        print("Valor de content:", content)
+        if created_at is None:
+            created_at = f'{year}-01-01T00:00:00'
+        if created_on is None:
+            created_on = f'{year}-12-31T23:59:00'
+
+        # Formatando variaveis
         content_formated = validate_string(content)
-        print("Tipo de extension:", type(extension))
-        print("Valor de extension:", extension)
         extension_formated = validate_string(extension)
-        print("Tipo de document_id:", type(self.document_id))
-        print("Valor de document_id:", self.document_id)
         document_type_formated = validate_string(self.document_id)
-        print("Tipo de created_at:", type(created_at))
-        print("Valor de created_at:", created_at)
         created_at_formated = validate_string(created_at)
-        print("Tipo de created_on:", type(created_on))
-        print("Valor de created_on:", created_on)
         created_on_formated = validate_string(created_on)
-        print("Tipo de user_id_searched:", type(self.user_id_searched))
-        print("Valor de user_id_searched:", self.user_id_searched)
         user_id_formated = validate_string(self.user_id_searched)
-        print("Tipo de sector_id:", type(self.sector_id))
-        print("Valor de sector_id:", self.sector_id)
         sector_id_formated = validate_string(self.sector_id)
 
+        # Construcao da QueryString
         querystring = {
-            "where": f"{{\"andX\":[{{\"conteudo\":\"like:%{content_formated}%\"}},"
-
-            # Verifica se a variável extension_formated é diferente de None
-                    f"{{\"extensao\":\"like:%{extension_formated}%\"}}," if extension_formated is not None else ''
-                    f"{{\"documento.tipoDocumento.id\":\"eq:{document_type_formated}\"}}," if document_type_formated is not None else ''
-                    f"{{\"criadoEm\":\"gte:{created_at_formated}\"}}," if created_at_formated is not None else ''
-                    f"{{\"criadoEm\":\"lte:{created_on_formated}\"}}," if created_on_formated is not None else ''
-                    f"{{\"criadoPor.id\":\"eq:{user_id_formated}\"}}," if user_id_formated is not None else ''
-                    f"{{\"documento.setorOrigem.id\":\"eq:{sector_id_formated}\"}}]}}" if sector_id_formated is not None else '',
+            "where": "{\"andX\":[",
             "limit": 10,
             "offset": "0",
             "order": "{}",
             "populate": "[\"populateAll\",\"documento\","
-                        "\"documento.tipoDocumento\",\"documento.juntadaAtual\","
+                        "\"documento.tipoDocumento\","
+                        "\"documento.juntadaAtual\","
                         "\"documento.juntadaAtual.volume\","
                         "\"documento.juntadaAtual.volume.processo\","
-                        "\"documento.juntadaAtual.criadoPor\",\"documento.setorOrigem\","
+                        "\"documento.juntadaAtual.criadoPor\","
+                        "\"documento.setorOrigem\","
                         "\"documento.setorOrigem.unidade\"]",
             "context": "{}"
         }
-        querystring_json = json.dumps(querystring)
+
+        # Adicionando as linhas de pesquisa condicionalmente
+        conditions = []
+
+        # Construindo as condições
+        if content_formated:
+            conditions.append("{\"conteudo\":\"like:%" + content_formated + "%\"}")
+
+        if extension_formated:
+            conditions.append("{\"extensao\":\"like:%" + extension_formated + "%\"}")
+
+        if document_type_formated:
+            conditions.append("{\"documento.tipoDocumento.id\":\"eq:" + document_type_formated + "\"}")
+
+        if created_at_formated:
+            conditions.append("{\"criadoEm\":\"gte:" + created_at_formated + "\"}")
+
+        if created_on_formated:
+            conditions.append("{\"criadoEm\":\"lte:" + created_on_formated + "\"}")
+
+        if user_id_formated:
+            conditions.append("{\"criadoPor.id\":\"eq:" + user_id_formated + "\"}")
+
+        if sector_id_formated:
+            conditions.append("{\"documento.setorOrigem.id\":\"eq:" + sector_id_formated + "\"}")
+
+        # Adicionando as condições à query string
+        if conditions:
+            querystring["where"] += ",".join(conditions)
+        querystring["where"] += "]}"
         payload = ""
-        print('QUERYSTRING -- ',querystring)
+
         try:
             req: object = self.get(
                 url,
                 data=payload,
-                params=querystring_json
+                params=querystring
             )
             data = json.loads(req.text)
             message = "Pasta obtida com sucesso"
