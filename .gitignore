@@ -1,4 +1,9 @@
 venv
 .idea
+
+#Todas pastas PyCache
+__pycache__/
 __pycache__
+/__pycache__
+
 .env

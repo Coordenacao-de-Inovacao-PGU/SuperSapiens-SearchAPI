@@ -41,18 +41,19 @@ class SuperSapiensService():
         return re.sub(r'^/?(.*)$', f'{self.baseurl}/\\1', url or '')
 
     def get_usuario(self):
-        Retorno = None
+        data_user = None
         try:
             perfil = self.get("/profile")
-            Retorno = json.loads(perfil.text)
+            data_user = json.loads(perfil.text)
             mensagem = "Usuário obtido com sucesso"
+            data_user["expiration_token"] = self.expiration
         except Exception:
-            Retorno = None
+            data_user = None
             mensagem = "Erro ao buscar usuário"
 
         return {
-            "sucesso": True if (Retorno is not None) else False,
-            "dados": Retorno,
+            "sucesso": True if (data_user is not None) else False,
+            "dados": data_user,
             "mensagem": mensagem
         }
 
@@ -304,6 +305,9 @@ class SuperSapiensService():
 
     def search_all_data(self, content, year, extension, unity, document_type, created_at, created_on, created_by,
                         sector):
+
+        # TODO: Fazer paginacao, utilizando ofset, valor anterior da pesquisa e continuacao
+        # TODO: Se passar parametro todos mandar todos os documentos de uma vez - BOTAR LIMITE
         data = None
         url = "/v1/administrativo/componente_digital/search"
 

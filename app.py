@@ -75,6 +75,7 @@ def sapiens_login_post():
                 split = nome_usuario.split(" ")
                 nome_usuario_f = f"{split[0]} {split[len(split) - 1]}".title()
                 user_id = user_sapiens_data['dados']['id']
+                expiration_token = user_sapiens_data['dados']['expiration_token']
 
                 access_token = create_access_token(identity={
                     "id": str(user_id),
@@ -88,6 +89,7 @@ def sapiens_login_post():
                         "nome": nome_usuario_f or "",
                     },
                     "token": access_token,
+                    "expiration": expiration_token
                 })
 
     # Caso autenticação falhe
@@ -206,3 +208,7 @@ def search_all():
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Erro ao buscar Pasta: {e}"}), 500
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=80, debug=True)
