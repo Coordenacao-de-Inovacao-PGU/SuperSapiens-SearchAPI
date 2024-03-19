@@ -308,6 +308,7 @@ class SuperSapiensService():
 
         # TODO: Fazer paginacao, utilizando ofset, valor anterior da pesquisa e continuacao
         # TODO: Se passar parametro todos mandar todos os documentos de uma vez - BOTAR LIMITE
+
         data = None
         url = "/v1/administrativo/componente_digital/search"
 
