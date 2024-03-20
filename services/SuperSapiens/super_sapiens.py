@@ -2,6 +2,13 @@ import requests
 import json, re, base64
 from typing import Optional
 from datetime import datetime, timedelta
+from services.SuperSapiens.sapiens_payloads import (
+    search_all_query_string,
+    search_sector_querystring,
+    search_unity_querystring,
+    search_user_by_name_querystring,
+    search_document_type_querystring
+)
 
 
 def validate_string(query):
@@ -9,6 +16,13 @@ def validate_string(query):
         str_query = str(query)
         return str_query
     return ""
+
+
+def calculate_pagination(page, limit):
+    if page > 0:
+        offset = (page - 1) * limit
+        return offset
+    return 0
 
 
 class SuperSapiensService():
@@ -165,18 +179,11 @@ class SuperSapiensService():
                 "mensagem": "Erro ao fazer login"
             }
 
-    def search_document_type(self, query):
+    def search_document_type(self, query, limit, page):
         data = None
         url = "/v1/administrativo/tipo_documento"
-
-        querystring = {"where":
-                           "{\"andX\":"
-                           "[{\"nome\":\"like:%" + str(query) + "%\"}]}",
-                       "limit": "10",
-                       "offset": "0",
-                       "order": "{}",
-                       "populate": "[]", "context": "{}"}
-
+        offset = calculate_pagination(page, limit)
+        querystring = search_document_type_querystring(query, limit, offset)
         payload = ""
 
         try:
@@ -199,18 +206,11 @@ class SuperSapiensService():
             "data": data,
         }
 
-    def search_user_by_name(self, query):
+    def search_user_by_name(self, query, limit, page):
         data = None
         url = "/v1/administrativo/usuario"
-
-        querystring = {"where":
-                           "{\"andX\":"
-                           "[{\"nome\":\"like:%" + str(query) + "%\"}]}",
-                       "limit": "10",
-                       "offset": "0",
-                       "order": "{}",
-                       "populate": "[\"populateAll\",\"colaborador\",\"colaborador.cargo\",\"colaborador.modalidadeColaborador\"]",
-                       "context": "{}"}
+        offset = calculate_pagination(page, limit)
+        querystring = search_user_by_name_querystring(query, limit, offset)
 
         payload = ""
 
@@ -234,17 +234,11 @@ class SuperSapiensService():
             "data": data,
         }
 
-    def search_unity(self, query):
+    def search_unity(self, query, limit, page):
         data = None
         url = "/v1/administrativo/setor"
-        querystring = {
-            "where":
-                "{\"parent\":\"isNull\","
-                "\"orX\":[{\"andX\":"
-                "[{\"nome\":\"like:%" + str(query) + "%\"}]},"
-                                                     "{\"andX\":"
-                                                     "[{\"sigla\":\"like:%" + str(query) + "%\"}]}]}",
-            "limit": "10", "offset": "0", "order": "{}", "populate": "[]", "context": "{}"}
+        offset = calculate_pagination(page, limit)
+        querystring = search_unity_querystring(query, limit, offset)
         payload = ""
 
         try:
@@ -267,20 +261,11 @@ class SuperSapiensService():
             "data": data,
         }
 
-    def search_sector(self, unity_id, query):
+    def search_sector(self, unity_id, query, limit, page):
         data = None
         url = "/v1/administrativo/setor"
-
-        querystring = {
-            "where":
-                "{\"parent\":\"isNotNull\","
-                "\"unidade.id\":\"eq:" + str(unity_id) + "\","
-                                                         "\"orX\":[{\"andX\":"
-                                                         "[{\"nome\":\"like:%" + str(query) + "%\"}]},"
-                                                                                              "{\"andX\":[{\"sigla\":\"like:%" + str(
-                    query) + "%\"}]}]}",
-            "limit": "10", "offset": "0", "order": "{}", "populate": "[\"unidade\",\"parent\"]", "context": "{}"}
-
+        offset = calculate_pagination(page, limit)
+        querystring = search_sector_querystring(query, unity_id, limit, offset)
         payload = ""
 
         try:
@@ -304,25 +289,22 @@ class SuperSapiensService():
         }
 
     def search_all_data(self, content, year, extension, unity, document_type, created_at, created_on, created_by,
-                        sector):
-
-        # TODO: Fazer paginacao, utilizando ofset, valor anterior da pesquisa e continuacao
-        # TODO: Se passar parametro todos mandar todos os documentos de uma vez - BOTAR LIMITE
+                        sector, limit, page):
 
         data = None
         url = "/v1/administrativo/componente_digital/search"
 
         if document_type:
-            self.search_document_type(document_type)
+            self.search_document_type(document_type, 10, 1)
         if created_by:
-            self.search_user_by_name(created_by)
+            self.search_user_by_name(created_by, 10, 1)
 
         # NOTE: Para pesquisar o setor e necessaria a Unidade antes #
         if unity:
-            self.search_unity(unity)
+            self.search_unity(unity, 10, 1)
             unity_id = self.unity
             if sector:
-                self.search_sector(unity_id, sector)
+                self.search_sector(unity_id, sector, 10, 1)
 
         if created_at is None:
             created_at = f'{year}-01-01T00:00:00'
@@ -330,62 +312,20 @@ class SuperSapiensService():
             created_on = f'{year}-12-31T23:59:00'
 
         # Formatando variaveis
-        content_formated = validate_string(content)
-        extension_formated = validate_string(extension)
-        document_type_formated = validate_string(self.document_id)
-        created_at_formated = validate_string(created_at)
-        created_on_formated = validate_string(created_on)
-        user_id_formated = validate_string(self.user_id_searched)
-        sector_id_formated = validate_string(self.sector_id)
-
-        # Construcao da QueryString
-        querystring = {
-            "where": "{\"andX\":[",
-            "limit": 10,
-            "offset": "0",
-            "order": "{}",
-            "populate": "[\"populateAll\",\"documento\","
-                        "\"documento.tipoDocumento\","
-                        "\"documento.juntadaAtual\","
-                        "\"documento.juntadaAtual.volume\","
-                        "\"documento.juntadaAtual.volume.processo\","
-                        "\"documento.juntadaAtual.criadoPor\","
-                        "\"documento.setorOrigem\","
-                        "\"documento.setorOrigem.unidade\"]",
-            "context": "{}"
+        data_search = {
+            "content": validate_string(content),
+            "extension": validate_string(extension),
+            "document_type": validate_string(self.document_id),
+            "created_at": validate_string(created_at),
+            "created_on": validate_string(created_on),
+            "user_id": validate_string(self.user_id_searched),
+            "sector_id": validate_string(self.sector_id)
         }
 
-        # Adicionando as linhas de pesquisa condicionalmente
-        conditions = []
-
-        # Construindo as condições
-        if content_formated:
-            conditions.append("{\"conteudo\":\"like:%" + content_formated + "%\"}")
-
-        if extension_formated:
-            conditions.append("{\"extensao\":\"like:%" + extension_formated + "%\"}")
-
-        if document_type_formated:
-            conditions.append("{\"documento.tipoDocumento.id\":\"eq:" + document_type_formated + "\"}")
-
-        if created_at_formated:
-            conditions.append("{\"criadoEm\":\"gte:" + created_at_formated + "\"}")
-
-        if created_on_formated:
-            conditions.append("{\"criadoEm\":\"lte:" + created_on_formated + "\"}")
-
-        if user_id_formated:
-            conditions.append("{\"criadoPor.id\":\"eq:" + user_id_formated + "\"}")
-
-        if sector_id_formated:
-            conditions.append("{\"documento.setorOrigem.id\":\"eq:" + sector_id_formated + "\"}")
-
-        # Adicionando as condições à query string
-        if conditions:
-            querystring["where"] += ",".join(conditions)
-        querystring["where"] += "]}"
         payload = ""
-
+        offset = calculate_pagination(page, limit)
+        querystring = search_all_query_string(limit, offset, data_search)
+        print(querystring)
         try:
             req: object = self.get(
                 url,
@@ -399,7 +339,6 @@ class SuperSapiensService():
             print(f"Erro ao buscar Pasta: {e}")
             data = None
             message = "Erro ao buscar Pasta"
-
         return {
             "sucesso": True if (data is not None) else False,
             "dados": data,

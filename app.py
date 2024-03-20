@@ -46,8 +46,7 @@ def home():
     '''Define a rota inicial'''
     return jsonify({
         "status": 200,
-        "mensagem": f"Search-Sapiens-API versão {APP_VERSION} operando normalmente.",
-        "valores": {}
+        "mensagem": f"Search-Sapiens-API versão {APP_VERSION} operando normalmente."
     })
 
 
@@ -109,9 +108,12 @@ def search_document_type_route():
     '''Define a rota de pesquisa de tipos documentos'''
 
     try:
+        # Params Querys
+        limit = int(request.args.get('limit', 10))
+        page = int(request.args.get('page', 1))
         query = request.args.get('q')
         if query:
-            result = super_sapiens_service.search_document_type(query)
+            result = super_sapiens_service.search_document_type(query, limit, page)
             return jsonify(result), 200
         else:
             return jsonify({"success": False, "message": f"Query nao encontrada!"}), 500
@@ -127,9 +129,12 @@ def search_user_by_name_route():
     '''Define a rota de pesquisa de usuario pelo nome'''
 
     try:
+        # Params Querys
+        limit = int(request.args.get('limit', 10))
+        page = int(request.args.get('page', 1))
         query = request.args.get('q')
         if query:
-            result = super_sapiens_service.search_user_by_name(query)
+            result = super_sapiens_service.search_user_by_name(query, limit, page)
             return jsonify(result), 200
         else:
             return jsonify({"success": False, "message": f"Query nao encontrada!"}), 500
@@ -145,9 +150,12 @@ def search_unity_route():
     '''Define a rota de pesquisa de unidades'''
 
     try:
+        # Params Querys
+        limit = int(request.args.get('limit', 10))
+        page = int(request.args.get('page', 1))
         query = request.args.get('q')
         if query:
-            result = super_sapiens_service.search_unity(query)
+            result = super_sapiens_service.search_unity(query, limit, page)
             return jsonify(result), 200
         else:
             return jsonify({"success": False, "message": f"Query nao encontrada!"}), 500
@@ -163,10 +171,14 @@ def search_sector_route():
     '''Define a rota de pesquisa de setores'''
 
     try:
+        # Params Querys
+        limit = int(request.args.get('limit', 10))
+        page = int(request.args.get('page', 1))
         query = request.args.get('q')
         unity_id = request.args.get('unity_id')
+
         if query and unity_id:
-            result = super_sapiens_service.search_sector(unity_id, query)
+            result = super_sapiens_service.search_sector(unity_id, query, limit, page)
             return jsonify(result), 200
         else:
             return jsonify({"success": False, "message": f"Query ou ID da unidade nao encontrada!"}), 500
@@ -183,6 +195,11 @@ def search_all():
     '''Define a rota de pesquisa de documentos'''
 
     try:
+        # Params Querys
+        limit = int(request.args.get('limit', 100))
+        page = int(request.args.get('page', 1))
+
+        # Body querys
         data = request.get_json()
 
         year = data.get("year")
@@ -195,19 +212,56 @@ def search_all():
         created_by = data.get("created_by")
         sector = data.get("sector")
 
-        # Verifica se a data está no formato correto
+        # Verificando parametros de data
+        if year is None:
+            return jsonify({"success": False, "message": "E obrigatorio passar o parametro 'year' na busca da rota!"}), 400
+
         if created_at is not None and not is_valid_date_format(created_at):
             return jsonify({"success": False, "message": "A data 'created_at' não está no formato correto."}), 400
         if created_on is not None and not is_valid_date_format(created_on):
             return jsonify({"success": False, "message": "A data 'created_on' não está no formato correto."}), 400
 
         result = super_sapiens_service.search_all_data(content, year, extension, unity, document_type, created_at, created_on,
-                                                       created_by, sector)
+                                                       created_by, sector, limit, page)
 
         return jsonify(result), 200
 
     except Exception as e:
         return jsonify({"success": False, "message": f"Erro ao buscar Pasta: {e}"}), 500
+
+#
+# @app.route('/search_all_docs', methods=['POST'])
+# @jwt_required()
+# @swag_from()
+# def search_all():
+#     '''Define a rota de pesquisa de documentos'''
+#
+#     try:
+#         data = request.get_json()
+#
+#         year = data.get("year")
+#         content = data.get("content")
+#         extension = data.get("extension")
+#         unity = data.get("unity")
+#         document_type = data.get("document_type")
+#         created_at = data.get("created_at")
+#         created_on = data.get("created_on")
+#         created_by = data.get("created_by")
+#         sector = data.get("sector")
+#
+#         # Verifica se a data está no formato correto
+#         if created_at is not None and not is_valid_date_format(created_at):
+#             return jsonify({"success": False, "message": "A data 'created_at' não está no formato correto."}), 400
+#         if created_on is not None and not is_valid_date_format(created_on):
+#             return jsonify({"success": False, "message": "A data 'created_on' não está no formato correto."}), 400
+#
+#         result = super_sapiens_service.search_all_data(content, year, extension, unity, document_type, created_at, created_on,
+#                                                        created_by, sector)
+#
+#         return jsonify(result), 200
+#
+#     except Exception as e:
+#         return jsonify({"success": False, "message": f"Erro ao buscar Pasta: {e}"}), 500
 
 
 if __name__ == "__main__":

@@ -11,6 +11,20 @@ SEARCH_ALL_ROUTE = {
 
         },
         {
+            "in": "query",
+            "name": "limit",
+            "required": False,
+            "type": "integer",
+            "description": "Limite de documentos por página"
+        },
+        {
+            "in": "query",
+            "name": "page",
+            "required": False,
+            "type": "integer",
+            "description": "Número da página"
+        },
+        {
             "in": "body",
             "name": "body",
             "required": True,
